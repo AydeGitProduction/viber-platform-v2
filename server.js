@@ -459,7 +459,7 @@ app.post('/api/webhooks/viber', (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 db.init().then(() => {
   app.listen(PORT, () => {
