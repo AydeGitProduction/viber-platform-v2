@@ -114,6 +114,16 @@ app.get('/api/contacts', (req, res) => {
   }
 });
 
+app.get('/api/contacts/:id', (req, res) => {
+  try {
+    const contact = db.queryOne('SELECT * FROM contacts WHERE id=?', [req.params.id]);
+    if (!contact) return res.status(404).json({ error: 'Contact not found' });
+    res.json(contact);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/contacts', (req, res) => {
   try {
     const { name, phone, email, tags } = req.body;
