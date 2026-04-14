@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viber Outreach Platform v2</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --success: #22c55e;
+      --warning: #eab308;
+      --danger: #ef4444;
+      --info: #3b82f6;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      height: 56px;
+      gap: 12px;
+    }
+    .header-logo { color: var(--accent); font-size: 22px; font-weight: 700; }
+    .header-sub { color: var(--muted); font-size: 14px; }
+
+    .nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+      padding: 0 24px;
+    }
+    .nav-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-item:hover { color: var(--text); }
+    .nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .main { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--text); }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: .85; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-icon { padding: 6px; border-radius: 6px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title { font-size: 18px; font-weight: 600; }
+
+    /* Status badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-active { background: rgba(34,197,94,.15); color: var(--success); }
+    .badge-draft { background: rgba(148,163,184,.15); color: var(--muted); }
+    .badge-paused { background: rgba(234,179,8,.15); color: var(--warning); }
+    .badge-completed { background: rgba(59,130,246,.15); color: var(--info); }
+    .badge-pending { background: rgba(148,163,184,.15); color: var(--muted); }
+    .badge-sent { background: rgba(139,92,246,.15); color: var(--accent); }
+    .badge-delivered { background: rgba(34,197,94,.15); color: var(--success); }
+    .badge-failed { background: rgba(239,68,68,.15); color: var(--danger); }
+    .badge-opened { background: rgba(59,130,246,.15); color: var(--info); }
+    .badge-clicked { background: rgba(234,179,8,.15); color: var(--warning); }
+    .badge-unsubscribed { background: rgba(239,68,68,.15); color: var(--danger); }
+    .badge-bounced { background: rgba(239,68,68,.15); color: var(--danger); }
+
+    /* Campaign cards */
+    .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .campaign-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .campaign-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .campaign-card-title { font-size: 16px; font-weight: 600; }
+    .campaign-card-desc { font-size: 13px; color: var(--muted); }
+    .campaign-stats { display: flex; gap: 16px; }
+    .campaign-stat { font-size: 12px; color: var(--muted); }
+    .campaign-stat strong { color: var(--text); font-size: 14px; display: block; }
+    .campaign-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      display: none;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+    /* Forms */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-select option { background: var(--card); }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      max-width: 320px;
+      animation: slideIn .2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error { border-left: 3px solid var(--danger); }
+    .toast-info { border-left: 3px solid var(--info); }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Detail view */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .back-link:hover { color: var(--text); }
+
+    .detail-info { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+    /* Analytics doughnut */
+    .analytics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+    .doughnut-wrap { max-width: 240px; margin: 0 auto; }
+
+    /* Loading overlay */
+    .loading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; padding: 24px 0; }
+
+    /* Tag */
+    .tag {
+      display: inline-block;
+      background: rgba(139,92,246,.15);
+      color: var(--accent);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 11px;
+      margin: 1px;
+    }
+
+    /* Settings form */
+    .settings-card { max-width: 480px; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 48px; color: var(--muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <span class="header-logo">Viber</span>
+    <span class="header-sub">Outreach Platform v2</span>
+  </header>
+
+  <nav class="nav">
+    <div class="nav-item active" data-tab="dashboard">
+      <i data-lucide="layout-dashboard" width="16" height="16"></i> Dashboard
+    </div>
+    <div class="nav-item" data-tab="contacts">
+      <i data-lucide="users" width="16" height="16"></i> Contacts
+    </div>
+    <div class="nav-item" data-tab="campaigns">
+      <i data-lucide="megaphone" width="16" height="16"></i> Campaigns
+    </div>
+    <div class="nav-item" data-tab="settings">
+      <i data-lucide="settings" width="16" height="16"></i> Settings
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-grid" id="stats-grid">
+        <div class="loading"><div class="spinner"></div> Loading...</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Campaign Performance</div>
+        <canvas id="campaignChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <!-- Contacts -->
+    <div class="tab-panel" id="tab-contacts">
+      <div class="section-header">
+        <div class="section-title">Contacts</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="triggerImport()">
+            <i data-lucide="upload" width="14" height="14"></i> Import CSV
+          </button>
+          <button class="btn btn-primary" onclick="openContactModal()">
+            <i data-lucide="plus" width="14" height="14"></i> Add Contact
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Tags</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-tbody">
+              <tr><td colspan="6" class="loading"><div class="spinner"></div> Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleCSVImport(event)" />
+    </div>
+
+    <!-- Campaigns -->
+    <div class="tab-panel" id="tab-campaigns">
+      <div id="campaigns-list-view">
+        <div class="section-header">
+          <div class="section-title">Campaigns</div>
+          <button class="btn btn-primary" onclick="openCampaignModal()">
+            <i data-lucide="plus" width="14" height="14"></i> Create Campaign
+          </button>
+        </div>
+        <div id="campaigns-grid" class="campaigns-grid">
+          <div class="loading"><div class="spinner"></div> Loading...</div>
+        </div>
+      </div>
+
+      <!-- Campaign Detail -->
+      <div id="campaign-detail-view" style="display:none;">
+        <div class="back-link" onclick="showCampaignsList()">
+          <i data-lucide="arrow-left" width="14" height="14"></i> Back to Campaigns
+        </div>
+        <div id="campaign-detail-content"></div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="section-title" style="margin-bottom:20px;">Settings</div>
+      <div class="card settings-card">
+        <form onsubmit="saveSettings(event)">
+          <div class="form-group">
+            <label class="form-label">Viber Service ID</label>
+            <input type="text" class="form-input" id="setting-service-id" placeholder="Enter Viber Service ID" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Viber Auth Token</label>
+            <input type="password" class="form-input" id="setting-auth-token" placeholder="Enter Viber Auth Token" />
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="save" width="14" height="14"></i> Save Settings
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="testConnection()">
+              <i data-lucide="zap" width="14" height="14"></i> Test Connection
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal">
+    <div class="modal-title" id="contact-modal-title">Add Contact</div>
+    <form onsubmit="submitContactForm(event)">
+      <input type="hidden" id="contact-edit-id" />
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-input" id="contact-name" required placeholder="Full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone *</label>
+        <input type="text" class="form-input" id="contact-phone" required placeholder="+1234567890" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="contact-email" placeholder="email@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma-separated)</label>
+        <input type="text" class="form-input" id="contact-tags" placeholder="vip, lead, customer" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeContactModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="contact-submit-btn">Add Contact</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Campaign Modal -->
+<div class="modal-overlay" id="campaign-modal">
+  <div class="modal">
+    <div class="modal-title" id="campaign-modal-title">Create Campaign</div>
+    <form onsubmit="submitCampaignForm(event)">
+      <input type="hidden" id="campaign-edit-id" />
+      <div class="form-group">
+        <label class="form-label">Campaign Name *</label>
+        <input type="text" class="form-input" id="campaign-name" required placeholder="e.g. Summer Sale 2024" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="campaign-description" placeholder="Optional description"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message Template * <span style="color:var(--muted);font-size:11px;">(use {name} for contact name)</span></label>
+        <textarea class="form-textarea" id="campaign-template" required placeholder="Hi {name}, check out our special offer!"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeCampaignModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="campaign-submit-btn">Create Campaign</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add to Campaign Modal -->
+<div class="modal-overlay" id="add-contact-campaign-modal">
+  <div class="modal">
+    <div class="modal-title">Add Contact to Campaign</div>
+    <div class="form-group">
+      <label class="form-label">Select Contact</label>
+      <select class="form-select" id="add-contact-select"></select>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeAddContactModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="submitAddContact()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let currentCampaignId = null;
+let allContacts = [];
+let allCampaigns = [];
+let campaignChart = null;
+let analyticsChart = null;
+
+// ─── Nav ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const tab = item.dataset.tab;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    if (tab === 'dashboard') loadDashboard();
+    else if (tab === 'contacts') loadContacts();
+    else if (tab === 'campaigns') { showCampaignsList(); loadCampaigns(); }
+    else if (tab === 'settings') loadSettings();
+
+    lucide.createIcons();
+  });
+});
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ─── API helper ───────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const [stats, campaigns] = await Promise.all([
+    api('/stats'),
+    api('/campaigns'),
+  ]);
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Contacts</div>
+      <div class="stat-value">${stats.total_contacts}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Campaigns</div>
+      <div class="stat-value">${stats.total_campaigns}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Messages Sent</div>
+      <div class="stat-value">${stats.messages_sent}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Delivery Rate</div>
+      <div class="stat-value">${stats.delivery_rate}%</div>
+      <div class="stat-sub">${stats.messages_delivered} delivered</div>
+    </div>
+  `;
+
+  if (campaignChart) campaignChart.destroy();
+  const ctx = document.getElementById('campaignChart').getContext('2d');
+  campaignChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: campaigns.map(c => c.name),
+      datasets: [
+        { label: 'Sent', data: campaigns.map(c => c.sent), backgroundColor: 'rgba(139,92,246,.7)' },
+        { label: 'Delivered', data: campaigns.map(c => c.delivered), backgroundColor: 'rgba(34,197,94,.7)' },
+        { label: 'Failed', data: campaigns.map(c => c.failed), backgroundColor: 'rgba(239,68,68,.7)' },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+      },
+    },
+  });
+}
+
+// ─── Contacts ─────────────────────────────────────────────────────────────────
+async function loadContacts() {
+  allContacts = await api('/contacts');
+  renderContacts();
+  lucide.createIcons();
+}
+
+function renderContacts() {
+  const tbody = document.getElementById('contacts-tbody');
+  if (!allContacts.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No contacts yet. Add or import some!</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = allContacts.map(c => `
+    <tr>
+      <td>${esc(c.name)}</td>
+      <td>${esc(c.phone)}</td>
+      <td>${esc(c.email || '—')}</td>
+      <td>${(c.tags || '').split(',').filter(Boolean).map(t => `<span class="tag">${esc(t.trim())}</span>`).join('')}</td>
+      <td><span class="badge badge-${c.status}">${c.status}</span></td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="openContactModal(${c.id})" title="Edit">
+            <i data-lucide="pencil" width="13" height="13"></i>
+          </button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteContact(${c.id})" title="Delete">
+            <i data-lucide="trash-2" width="13" height="13"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  lucide.createIcons();
+}
+
+function openContactModal(id) {
+  document.getElementById('contact-edit-id').value = id || '';
+  if (id) {
+    const c = allContacts.find(x => x.id === id);
+    document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+    document.getElementById('contact-submit-btn').textContent = 'Save Changes';
+    document.getElementById('contact-name').value = c.name;
+    document.getElementById('contact-phone').value = c.phone;
+    document.getElementById('contact-email').value = c.email || '';
+    document.getElementById('contact-tags').value = c.tags || '';
+  } else {
+    document.getElementById('contact-modal-title').textContent = 'Add Contact';
+    document.getElementById('contact-submit-btn').textContent = 'Add Contact';
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-phone').value = '';
+    document.getElementById('contact-email').value = '';
+    document.getElementById('contact-tags').value = '';
+  }
+  document.getElementById('contact-modal').classList.add('open');
+}
+
+function closeContactModal() {
+  document.getElementById('contact-modal').classList.remove('open');
+}
+
+async function submitContactForm(e) {
+  e.preventDefault();
+  const id = document.getElementById('contact-edit-id').value;
+  const body = {
+    name: document.getElementById('contact-name').value,
+    phone: document.getElementById('contact-phone').value,
+    email: document.getElementById('contact-email').value,
+    tags: document.getElementById('contact-tags').value,
+  };
+  try {
+    if (id) {
+      await api('/contacts/' + id, { method: 'PUT', body: JSON.stringify(body) });
+      toast('Contact updated', 'success');
+    } else {
+      await api('/contacts', { method: 'POST', body: JSON.stringify(body) });
+      toast('Contact added', 'success');
+    }
+    closeContactModal();
+    await loadContacts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  try {
+    await api('/contacts/' + id, { method: 'DELETE' });
+    toast('Contact deleted', 'success');
+    await loadContacts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function triggerImport() {
+  document.getElementById('csv-input').click();
+}
+
+async function handleCSVImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/contacts/import', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Import failed');
+    toast(`Imported ${data.imported}, skipped ${data.skipped}`, 'success');
+    await loadContacts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  e.target.value = '';
+}
+
+// ─── Campaigns ─────────────────────────────────────────────────────────────────
+function showCampaignsList() {
+  document.getElementById('campaigns-list-view').style.display = '';
+  document.getElementById('campaign-detail-view').style.display = 'none';
+  currentCampaignId = null;
+}
+
+async function loadCampaigns() {
+  allCampaigns = await api('/campaigns');
+  renderCampaigns();
+  lucide.createIcons();
+}
+
+function renderCampaigns() {
+  const grid = document.getElementById('campaigns-grid');
+  if (!allCampaigns.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">📢</div><div>No campaigns yet. Create your first!</div></div>';
+    return;
+  }
+  grid.innerHTML = allCampaigns.map(c => `
+    <div class="campaign-card">
+      <div class="campaign-card-header">
+        <div>
+          <div class="campaign-card-title">${esc(c.name)}</div>
+          <div class="campaign-card-desc">${esc(c.description || '')}</div>
+        </div>
+        <span class="badge badge-${c.status}">${c.status}</span>
+      </div>
+      <div class="campaign-stats">
+        <div class="campaign-stat"><strong>${c.total_contacts}</strong>Contacts</div>
+        <div class="campaign-stat"><strong>${c.sent}</strong>Sent</div>
+        <div class="campaign-stat"><strong>${c.delivered}</strong>Delivered</div>
+        <div class="campaign-stat"><strong>${c.failed}</strong>Failed</div>
+      </div>
+      <div class="campaign-actions">
+        <button class="btn btn-primary btn-sm" onclick="openCampaignDetail(${c.id})">
+          <i data-lucide="eye" width="13" height="13"></i> View
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openCampaignModal(${c.id})">
+          <i data-lucide="pencil" width="13" height="13"></i> Edit
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCampaign(${c.id})">
+          <i data-lucide="trash-2" width="13" height="13"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+function openCampaignModal(id) {
+  document.getElementById('campaign-edit-id').value = id || '';
+  if (id) {
+    const c = allCampaigns.find(x => x.id === id);
+    document.getElementById('campaign-modal-title').textContent = 'Edit Campaign';
+    document.getElementById('campaign-submit-btn').textContent = 'Save Changes';
+    document.getElementById('campaign-name').value = c.name;
+    document.getElementById('campaign-description').value = c.description || '';
+    document.getElementById('campaign-template').value = c.message_template;
+  } else {
+    document.getElementById('campaign-modal-title').textContent = 'Create Campaign';
+    document.getElementById('campaign-submit-btn').textContent = 'Create Campaign';
+    document.getElementById('campaign-name').value = '';
+    document.getElementById('campaign-description').value = '';
+    document.getElementById('campaign-template').value = '';
+  }
+  document.getElementById('campaign-modal').classList.add('open');
+}
+
+function closeCampaignModal() {
+  document.getElementById('campaign-modal').classList.remove('open');
+}
+
+async function submitCampaignForm(e) {
+  e.preventDefault();
+  const id = document.getElementById('campaign-edit-id').value;
+  const body = {
+    name: document.getElementById('campaign-name').value,
+    description: document.getElementById('campaign-description').value,
+    message_template: document.getElementById('campaign-template').value,
+  };
+  try {
+    if (id) {
+      await api('/campaigns/' + id, { method: 'PUT', body: JSON.stringify(body) });
+      toast('Campaign updated', 'success');
+    } else {
+      await api('/campaigns', { method: 'POST', body: JSON.stringify(body) });
+      toast('Campaign created', 'success');
+    }
+    closeCampaignModal();
+    await loadCampaigns();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteCampaign(id) {
+  if (!confirm('Delete this campaign? This cannot be undone.')) return;
+  try {
+    await api('/campaigns/' + id, { method: 'DELETE' });
+    toast('Campaign deleted', 'success');
+    await loadCampaigns();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function openCampaignDetail(id) {
+  currentCampaignId = id;
+  document.getElementById('campaigns-list-view').style.display = 'none';
+  document.getElementById('campaign-detail-view').style.display = '';
+  await renderCampaignDetail(id);
+  lucide.createIcons();
+}
+
+async function renderCampaignDetail(id) {
+  const [campaign, contacts, analytics] = await Promise.all([
+    api('/campaigns/' + id),
+    api('/campaigns/' + id + '/contacts'),
+    api('/campaigns/' + id + '/analytics'),
+  ]);
+
+  const allC = await api('/contacts');
+
+  const inCampaignIds = contacts.map(c => c.id);
+  const available = allC.filter(c => !inCampaignIds.includes(c.id));
+
+  const select = document.getElementById('add-contact-select');
+  select.innerHTML = available.map(c => `<option value="${c.id}">${esc(c.name)} (${esc(c.phone)})</option>`).join('');
+
+  const el = document.getElementById('campaign-detail-content');
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;">${esc(campaign.name)}</h2>
+        <p style="color:var(--muted);margin-top:4px;">${esc(campaign.description || '')}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge badge-${campaign.status}">${campaign.status}</span>
+        <button class="btn btn-primary" onclick="sendCampaign(${id})" id="send-btn">
+          <i data-lucide="send" width="14" height="14"></i> Send Campaign
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-info">
+      <div class="stat-card"><div class="stat-label">Total Contacts</div><div class="stat-value">${campaign.total_contacts}</div></div>
+      <div class="stat-card"><div class="stat-label">Sent</div><div class="stat-value">${campaign.sent}</div></div>
+      <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value">${campaign.delivered}</div></div>
+      <div class="stat-card"><div class="stat-label">Failed</div><div class="stat-value">${campaign.failed}</div></div>
+      <div class="stat-card"><div class="stat-label">Opened</div><div class="stat-value">${campaign.opened}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="section-header" style="margin-bottom:12px;">
+        <div style="font-weight:600;">Contacts in Campaign</div>
+        <button class="btn btn-secondary btn-sm" onclick="openAddContactModal()">
+          <i data-lucide="plus" width="13" height="13"></i> Add Contact
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Sent At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="campaign-contacts-tbody">
+            ${contacts.length === 0
+              ? '<tr><td colspan="5"><div class="empty">No contacts in this campaign yet.</div></td></tr>'
+              : contacts.map(c => `
+                <tr>
+                  <td>${esc(c.name)}</td>
+                  <td>${esc(c.phone)}</td>
+                  <td><span class="badge badge-${c.cc_status}">${c.cc_status}</span></td>
+                  <td>${c.sent_at ? c.sent_at : '—'}</td>
+                  <td>
+                    <button class="btn btn-danger btn-sm btn-icon" onclick="removeFromCampaign(${id}, ${c.id})">
+                      <i data-lucide="trash-2" width="13" height="13"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:16px;">Analytics</div>
+      <div style="max-width:300px;">
+        <canvas id="analyticsChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  lucide.createIcons();
+
+  if (analyticsChart) analyticsChart.destroy();
+  const ctx = document.getElementById('analyticsChart');
+  if (ctx) {
+    const breakdown = analytics.breakdown || {};
+    analyticsChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'Sent', 'Delivered', 'Failed', 'Opened'],
+        datasets: [{
+          data: [
+            breakdown.pending || 0,
+            breakdown.sent || 0,
+            breakdown.delivered || 0,
+            breakdown.failed || 0,
+            breakdown.opened || 0,
+          ],
+          backgroundColor: ['#475569','#8b5cf6','#22c55e','#ef4444','#3b82f6'],
+        }],
+      },
+      options: {
+        plugins: { legend: { labels: { color: '#94a3b8' } } },
+      },
+    });
+  }
+}
+
+async function sendCampaign(id) {
+  const btn = document.getElementById('send-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Sending...';
+  }
+  try {
+    const result = await api('/campaigns/' + id + '/send', { method: 'POST', body: '{}' });
+    toast(`Sent: ${result.sent}, Failed: ${result.failed}`, result.failed > 0 ? 'info' : 'success');
+    await renderCampaignDetail(id);
+  } catch (err) {
+    toast(err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="send" width="14" height="14"></i> Send Campaign';
+      lucide.createIcons();
+    }
+  }
+}
+
+async function removeFromCampaign(campaignId, contactId) {
+  if (!confirm('Remove this contact from the campaign?')) return;
+  try {
+    await api(`/campaigns/${campaignId}/contacts/${contactId}`, { method: 'DELETE' });
+    toast('Contact removed', 'success');
+    await renderCampaignDetail(campaignId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function openAddContactModal() {
+  document.getElementById('add-contact-campaign-modal').classList.add('open');
+}
+
+function closeAddContactModal() {
+  document.getElementById('add-contact-campaign-modal').classList.remove('open');
+}
+
+async function submitAddContact() {
+  const contactId = document.getElementById('add-contact-select').value;
+  if (!contactId) return toast('Select a contact', 'error');
+  try {
+    await api(`/campaigns/${currentCampaignId}/contacts`, {
+      method: 'POST',
+      body: JSON.stringify({ contact_id: parseInt(contactId, 10) }),
+    });
+    toast('Contact added to campaign', 'success');
+    closeAddContactModal();
+    await renderCampaignDetail(currentCampaignId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const settings = await api('/settings');
+    document.getElementById('setting-service-id').value = settings.viber_service_id || '';
+    document.getElementById('setting-auth-token').value = settings.viber_auth_token || '';
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function saveSettings(e) {
+  e.preventDefault();
+  try {
+    await api('/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        viber_service_id: document.getElementById('setting-service-id').value,
+        viber_auth_token: document.getElementById('setting-auth-token').value,
+      }),
+    });
+    toast('Settings saved', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function testConnection() {
+  try {
+    const result = await api('/settings/test', { method: 'POST', body: '{}' });
+    toast('Connection successful' + (result.name ? ': ' + result.name : ''), 'success');
+  } catch (err) {
+    toast('Connection failed: ' + err.message, 'error');
+  }
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+lucide.createIcons();
+loadDashboard();
+loadContacts();
+</script>
+</body>
+</html>
